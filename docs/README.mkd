@@ -1,0 +1,9 @@
+ARXControl Documentation
+========================
+
+Here is the documentation for the ARXControl interface library.
+
+Sphinx is required to build this documentation, and can be installed via
+`pip install sphinx`, or `easy_install sphinx` if you haven't yet been
+introduced to the wonders of `pip`.
+

@@ -1,0 +1,27 @@
+ARXControl
+==========
+
+The ARXControl interface library for the LoFASM ARX system.
+
+ARX Control Unit
+----------------
+
+ARXControl is meant to interface with the ARX Control Unit (ACU), which is based
+off of an ATMega 2560 MCU. The firmware for the ACU can be found at ...
+
+Authors
+-------
+
+ARXControl was written by Anthony Ford.
+
+
+Tests
+-----
+
+ARXControl comes with tests to verify functionality.
+
+These tests require `nose` to properly find all test cases.
+You can install `nose` via `pip install nose`, or `easy_intsall nose` if you
+haven't yet been introduced to the wonders of `pip`.
+
+The tests can be run via `nosetests` after install.
