@@ -40,31 +40,23 @@ class MockACU(ARX):
     given commands.
     """
 
-    DEFAULT_STATE = Bits('0xfff0f0f0f055aa00')
+    DEFAULT_STATE = Bits('0xfff01f10')
     """
     Simulated response from ARX Control Unit.
 
     Consists of:
 
-    +------+----------+----------------+
-    | Byte | Segment  | Value          |
-    +======+==========+================+
-    | 1    | START    | 0xFF           |
-    +------+----------+----------------+
-    | 2    | Ch 1     | Lvl:15, Lvl:0  |
-    +------+----------+----------------+
-    | 3    | Ch 2     | Lvl:15, Lvl:0  |
-    +------+----------+----------------+
-    | 4    | Ch 3     | Lvl:15, Lvl:0  |
-    +------+----------+----------------+
-    | 5    | Ch 4     | Lvl:15, Lvl:0  |
-    +------+----------+----------------+
-    | 6    | FB       | 1, 1, 1, 1     |
-    +------+----------+----------------+
-    | 7    | FEE      | On, On, On, On |
-    +------+----------+----------------+
-    | 8    | Checksum | 0x00           |
-    +------+----------+----------------+
+    +------+----------+------------------------+
+    | Byte | Segment  | Value                  |
+    +======+==========+========================+
+    | 1    | START    | 0xFF                   |
+    +------+----------+------------------------+
+    | 2    | Ch 1     | Lvl:15, Lvl:0          |
+    +------+----------+------------------------+
+    | 3    | FB & FEE | On, and On, On, On, On |
+    +------+----------+------------------------+
+    | 4    | Checksum | 0x10                   |
+    +------+----------+------------------------+
         
     """
 
@@ -76,6 +68,8 @@ class MockACU(ARX):
                          6: self._write}
         self._resp_buffer = ''
         self.state = self._unpack(BitStream(self.DEFAULT_STATE))
+        self._setup()
+        self._update()
 
     def _ready(self,msg=None):
        self._resp_buffer = const.kREADY.bytes
@@ -86,9 +80,8 @@ class MockACU(ARX):
             self._resp_buffer = const.kACK.bytes
     
     def _read(self, msg=None):
-        state = self.state['start'] + self.state['ch0'] + self.state['ch1'] +\
-                self.state['ch2'] + self.state['ch3'] + self.state['fb'] +\
-                self.state['fee'] + self.state['checksum']
+        state = self.state['start'] + self.state['atten'] + self.state['fb'] +\
+        self.state['fee'] + self.state['checksum']
 
         self._resp_buffer = state.bytes
     

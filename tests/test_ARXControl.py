@@ -9,59 +9,43 @@ from bitstring import BitStream, Bits
 from .mocks import MockARX
 from ARXControl import const
 
-TEST_STATE_1 = Bits('0xfff0f0f0f055aa00')
+TEST_STATE_1 = Bits('0xfff01f10')
 """
 Simulated response from ARX Control Unit.
 
 Consists of:
 
-+------+----------+----------------+
-| Byte | Segment  | Value          |
-+======+==========+================+
-| 1    | START    | 0xFF           |
-+------+----------+----------------+
-| 2    | Ch 1     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 3    | Ch 2     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 4    | Ch 3     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 5    | Ch 4     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 6    | FB       | 1, 1, 1, 1     |
-+------+----------+----------------+
-| 7    | FEE      | On, On, On, On |
-+------+----------+----------------+
-| 8    | Checksum | 0x00           |
-+------+----------+----------------+
++------+----------+------------------------+
+| Byte | Segment  | Value                  |
++======+==========+========================+
+| 1    | START    | 0xFF                   |
++------+----------+------------------------+
+| 2    | Attens   | Lvl:15, Lvl:0          |
++------+----------+------------------------+
+| 3    | FB & FEE | 1, and On, On, On, On  |
++------+----------+------------------------+
+| 4    | Checksum | 0x10                   |
++------+----------+------------------------+
     
 """
 
-TEST_STATE_2 = Bits('0xff0f0f0f0faaaaff')
+TEST_STATE_2 = Bits('0xff0f0fff')
 """
 Simulated response from ARX Control Unit.
 
 Consists of:
 
-+------+----------+----------------+
-| Byte | Segment  | Value          |
-+======+==========+================+
-| 1    | START    | 0xFF           |
-+------+----------+----------------+
-| 2    | Ch 1     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 3    | Ch 2     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 4    | Ch 3     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 5    | Ch 4     | Lvl:15, Lvl:0  |
-+------+----------+----------------+
-| 6    | FB       | 2, 2, 2, 2     |
-+------+----------+----------------+
-| 7    | FEE      | On, On, On, On |
-+------+----------+----------------+
-| 8    | Checksum | 0xFF           |
-+------+----------+----------------+
++------+----------+------------------------+
+| Byte | Segment  | Value                  |
++======+==========+========================+
+| 1    | START    | 0xFF                   |
++------+----------+------------------------+
+| 2    | Attens   | Lvl:0, Lvl:15          |
++------+----------+------------------------+
+| 3    | FB & FEE | 0, and On, On, On, On  | 
++------+----------+------------------------+
+| 4    | Checksum | 0xFF                   |
++------+----------+------------------------+
     
 """
 
@@ -90,7 +74,7 @@ class TestARXControl(unittest.TestCase):
     def test_checksum(self):
         self.assertEqual(self.arx._checksum(self.arx._unpack(
                             BitStream(TEST_STATE_1))).bytes,
-                         Bits('0x00').bytes)
+                            TEST_STATE_1[-8:].bytes)
 
     def test_read(self):
         self.arx.conn.state = self.arx._unpack(BitStream(TEST_STATE_1))
