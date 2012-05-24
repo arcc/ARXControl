@@ -1,6 +1,5 @@
 from bitstring import BitArray, BitStream, Bits, ReadError as BS_ReadError
 
-from .channel import Channel
 from .connection import Connection
 from . import const
 from .err import CheckError, WriteError
@@ -18,9 +17,20 @@ class ARX(object):
         self.conn = self._connect(tty)
         self.conn_failure = 0
         self.check_error = 0
-        #: List of :class:`~ARXControl.channel.Channel` objects.
-        self.channels = [Channel(i) for i in range(4)]
+        self._setup()
         self._initialize()
+
+    def _setup(self):
+        """Setup hook."""
+        #: List of booleans. Represents FEE Power
+        self.power = [False for i in range(4)]
+        #: Atten 0, 0-15
+        self.atten0 = 0
+        #: Atten 1, 0-15
+        self.atten1 = 0
+        #: Filter, 0-2
+        self.filter = 0
+
 
     def _initialize(self):
         """Initialization hook."""
@@ -38,8 +48,7 @@ class ARX(object):
             :meth:`~ARXControl.ARX._unpack`
         :rtype: Bits
         """
-        return state['start'] ^ state['ch0'] ^ state['ch1'] ^ state['ch2'] ^ \
-                state['ch3'] ^ state['fb'] ^ state['fee']
+        return state['start'] ^ state['atten'] ^ (state['fb'] + state['fee'])
 
     def _unpack(self, state_stream):
         """
@@ -50,12 +59,9 @@ class ARX(object):
         """
         state = {}
         state['start'] = state_stream.read(8)
-        state['ch0'] = state_stream.read(8)
-        state['ch1'] = state_stream.read(8)
-        state['ch2'] = state_stream.read(8)
-        state['ch3'] = state_stream.read(8)
-        state['fb'] = state_stream.read(8)
-        state['fee'] = state_stream.read(8)
+        state['atten'] = state_stream.read(8)
+        state['fb'] = state_stream.read(4)
+        state['fee'] = state_stream.read(4)
         try:
             state['checksum'] = state_stream.read(8)
         except BS_ReadError:
@@ -67,15 +73,13 @@ class ARX(object):
         """
         Takes :attr:`~ARXControl.state` and updates :attr:`~ARXControl.channels`
         """
-        fb = list(self.state['fb'].cut(2))
-        fee = list(self.state['fee'].cut(2))
-        for i in range(len(self.channels)):
-            ch = list(self.state['ch%s'%(i)].cut(4))
-            self.channels[i].atten0 = ch[0].uint
-            self.channels[i].atten1 = ch[1].uint
-            self.channels[i].filterbank = fb[i].uint
-            self.channels[i].power = fb[i][0]
-
+        fee = list(self.state['fee'].cut(1))
+        
+        for i in range(len(self.power)):
+            self.power[i] = fee[i]
+        self.filterbank = self.state['fb']
+        self.atten0, self.atten1 = map(lambda x: x.uint,
+                                       list(self.state['atten'].cut(4)))
 
     def read(self):
         """
@@ -118,15 +122,11 @@ class ARX(object):
         :rtype: BitArray of length :attr:`~ARXControl.const.FRAME_SIZE`.
         """
         attens = BitArray()
-        fee = BitArray()
-        fb = BitArray()
 
-        for channel in self.channels:
-            attens.append(self._atten_translate(channel.atten0))
-            attens.append(self._atten_translate(channel.atten1))
-            fb.append(Bits(uint=channel.filterbank, length=2))
-            fee.append(Bits(bool=channel.power))
-            fee.append(Bits(bool=False))
+        attens.append(self._atten_translate(self.atten0))
+        attens.append(self._atten_translate(self.atten1))
+        fb = Bits(uint=self.filter, length=4)
+        fee = Bits(self.power)
 
         message = const.START_BYTE + attens + fb + fee
         checksum = self._checksum(self._unpack(BitStream(message)))

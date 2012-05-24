@@ -13,7 +13,7 @@ START_BYTE = Bits(uint=255,length=8)
 
 # Consts
 MAX_RETRIES = 3
-FRAME_SIZE = 8  # Bytes
+FRAME_SIZE = 4  # Bytes
 
 SEPARATOR = Bits(bytes=',')
 END_COMMAND = Bits(bytes=';')
