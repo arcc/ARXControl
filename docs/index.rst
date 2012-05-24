@@ -14,8 +14,9 @@ library used by a more complex LoFASM interface system.
 Pinout
 ------
 
-Pinout as mapped to an ATMega 2560 MCU.
-The planned ARX Control Unit is a `JKDevices`_ `MegaMini ATMEGA2560`_ board.
+Pinout as mapped to an ATMega328 (Arduino compatible for now).
+Prototyping is based off of a standard Arduino Uno, but plans are to move to a
+`USB Boarduino`_ by `Adafruit`_.
 
 .. include:: pinout.rst
 
@@ -27,9 +28,7 @@ Simple API
 .. autoclass:: ARXControl.arx.ARX
     :members:
 
-.. autoclass:: ARXControl.channel.Channel
-    :members: 
-
 .. _LoFASM ARX: http://cara.phys.utb.edu/LoFASM/ARX
-.. _JKDevices: http://jkdevices.com
-.. _MegaMini ATMEGA2560: http://jkdevices.com/arduino-megamini
+.. _USB Boarduino: http://www.adafruit.com/products/91
+.. _Adafruit: http://www.adafruit.com
+
