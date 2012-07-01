@@ -18,13 +18,27 @@ class Connection(object):
 
     def _connect(self, tty):
         """Connect hook. Useful for testing hooks"""
-        return Serial(tty)
+        return Serial(tty, timeout=const.TIMEOUT, baudrate=const.BAUDRATE)
+
+    def _split(self, resp):
+        return resp.strip(';').split(',')
+
+    def _send_cmd(self, cmd, msg=None):
+
+        out = str(cmd.int)
+        if msg:
+            out += const.SEPARATOR.bytes
+            out += msg
+        out += const.END_COMMAND.bytes
+        return out 
 
     def __enter__(self):
         while self.conn_failure < const.MAX_RETRIES:
-            self.serial.write(const.CHECK_READY.bytes)
+            self.serial.write(self._send_cmd(const.CHECK_READY))
 
-            if self.serial.read(1) == const.kREADY.bytes:
+            cmd = self._split(self.serial.read(const.FRAME_OFFSET))[0]
+
+            if  int(cmd) == const.kREADY.uint:
                 break
             self.conn_failure += 1
 

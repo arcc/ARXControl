@@ -14,6 +14,13 @@ START_BYTE = Bits(uint=255,length=8)
 # Consts
 MAX_RETRIES = 3
 FRAME_SIZE = 4  # Bytes
+FRAME_OFFSET = 15 # Bytes
+BUFFER_SIZE = 100 # Bytes
 
 SEPARATOR = Bits(bytes=',')
 END_COMMAND = Bits(bytes=';')
+
+#BAUDRATE = 57600 # Baudrate for Arduino Duemilanove (FTDI Comms)
+BAUDRATE = 115200 # Baudrate for Arduino Uno + (AT8u2 Comms)
+
+TIMEOUT = 1 # Seconds

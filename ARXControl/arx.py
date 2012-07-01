@@ -34,7 +34,8 @@ class ARX(object):
 
     def _initialize(self):
         """Initialization hook."""
-        self.read()
+        #self.read()
+        pass
 
     def _connect(self, tty):
         """Connection hook. Useful for testing."""
@@ -88,8 +89,10 @@ class ARX(object):
         """
         with self.conn as conn:
             while self.check_error < const.MAX_RETRIES:
-                conn.write(const.READ.bytes)
-                state_stream = BitStream(bytes=conn.read(const.FRAME_SIZE))
+                conn.write(self.conn._send_cmd(const.READ))
+                ack,resp = self.conn._split(conn.read(const.BUFFER_SIZE))
+
+                state_stream = BitStream(bytes=resp)
 
                 state = self._unpack(state_stream)
 
@@ -138,11 +141,14 @@ class ARX(object):
         Writes internal states to ARXControl
         """
         with self.conn as conn:
-            comm_frame = const.WRITE + const.SEPARATOR + self._translate()+\
-                    const.END_COMMAND 
+            #comm_frame = const.WRITE + const.SEPARATOR + self._translate()+\
+                    #const.END_COMMAND 
             
-            conn.write(comm_frame.bytes)
-            if conn.read(1) == const.kACK.bytes: 
+            conn.write(self.conn._send_cmd(const.WRITE,self._translate().bytes))
+
+            cmd,_ = self.conn._split(conn.read(const.BUFFER_SIZE))
+
+            if int(cmd) == const.kACK.uint: 
                 return True
             else:
                 raise WriteError("Did not recieve ACK on write attempt.") 
