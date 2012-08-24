@@ -1,15 +1,19 @@
-
-from bitstring import Bits
-
 # Comm constants
-kCOMM_ERR = Bits(uint=0,length=8)
-kACK = Bits(uint=1,length=8)
-kREADY = Bits(uint=2,length=8)
-kERR = Bits(uint=3,length=8)
-CHECK_READY = Bits(uint=4,length=8)
-READ = Bits(uint=5,length=8)
-WRITE = Bits(uint=6,length=8)
-START_BYTE = Bits(uint=255,length=8)
+kCOMM_ERR = 0
+kACK = 1
+kREADY = 2
+kERR = 3
+
+# Commands
+ACU_READY = 4
+FEE_READ = 5
+FEE_WRITE = 6
+FILTER_READ = 7
+FILTER_WRITE = 8
+ATTEN_READ = 9
+ATTEN_WRITE = 10
+EEPROM_READ = 11
+EEPROM_WRITE = 12
 
 # Consts
 MAX_RETRIES = 3
@@ -17,10 +21,13 @@ FRAME_SIZE = 4  # Bytes
 FRAME_OFFSET = 15 # Bytes
 BUFFER_SIZE = 100 # Bytes
 
-SEPARATOR = Bits(bytes=',')
-END_COMMAND = Bits(bytes=';')
+SEPARATOR = ','
+END_COMMAND = ';'
 
 #BAUDRATE = 57600 # Baudrate for Arduino Duemilanove (FTDI Comms)
 BAUDRATE = 115200 # Baudrate for Arduino Uno + (AT8u2 Comms)
 
 TIMEOUT = 1 # Seconds
+
+# Responses
+READY_RSP = "READY"
