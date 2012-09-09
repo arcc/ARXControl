@@ -1,8 +1,7 @@
 #from mockserial import Serial as MockSerial
 
-from bitstring import BitArray, Bits, BitStream
-
 from ARXControl import ARX, const 
+from ARXControl.arx import unpack
 from ARXControl.connection import Connection
 
 class MockConnection(Connection):
@@ -32,7 +31,7 @@ class MockARX(ARX):
         pass
 
 
-class MockACU(ARX):
+class MockACU(ARX, Connection):
     """
     Mock object to emulate the ARX Control Unit.
 
@@ -40,69 +39,166 @@ class MockACU(ARX):
     given commands.
     """
 
-    DEFAULT_STATE = Bits('0xfff01f10')
-    """
-    Simulated response from ARX Control Unit.
+    
 
-    Consists of:
+    DEFAULT_STATE = {'FEE':[0,0,0,0],
+                     'ATTEN':[15,15],
+                     'FILTER':0,
+                     'EEPROM':1}
 
-    +------+----------+------------------------+
-    | Byte | Segment  | Value                  |
-    +======+==========+========================+
-    | 1    | START    | 0xFF                   |
-    +------+----------+------------------------+
-    | 2    | Ch 1     | Lvl:15, Lvl:0          |
-    +------+----------+------------------------+
-    | 3    | FB & FEE | On, and On, On, On, On |
-    +------+----------+------------------------+
-    | 4    | Checksum | 0x10                   |
-    +------+----------+------------------------+
-        
-    """
-
-    FRAME_LEN = const.FRAME_SIZE*8
 
     def __init__(self, tty=None):
-        self.responses = {4: self._ready,
-                         5: self._read,
-                         6: self._write}
+        self.responses = {const.ACU_READY: self._ready,
+                          const.FEE_READ: self._fee_read,
+                          const.FEE_WRITE: self._fee_write,
+                          const.FILTER_READ: self._filter_read,
+                          const.FILTER_WRITE: self._filter_write,
+                          const.ATTEN_READ: self._atten_read,
+                          const.ATTEN_WRITE: self._atten_write,
+                          const.EEPROM_READ: self._eeprom_read,
+                          const.EEPROM_WRITE: self._eeprom_write}
+
         self._resp_buffer = ''
-        self.state = self._unpack(BitStream(self.DEFAULT_STATE))
-        self._setup()
-        self._update()
+        self.state = self.DEFAULT_STATE
+
+    def _build_resp(self,code=1,resp_str=None):
+        out = str(code)
+        if resp_str or resp_str is 0:
+            out += const.SEPARATOR + str(resp_str)
+        out += const.END_COMMAND
+        return out
+
+
+    #def _send_cmd(self, command, *args):
+        #out = str(command)
+        #if args or args is 0:
+            #if len(args) > 2:
+                #raise TypeError('Only accepts a maximum of two arguments')
+            #out += const.SEPARATOR +  '|'.join(map(str,args))
+        #out += const.END_COMMAND
+        #return out 
+        
 
     def _ready(self,msg=None):
-       self._resp_buffer = const.kREADY.bytes
+        self._resp_buffer = self._build_resp(const.kREADY,const.READY_RSP)
 
-    def _write(self, msg=None):
-        if msg is not None:
-            self.state = self._unpack(BitStream(msg))
-            self._resp_buffer = const.kACK.bytes
-    
-    def _read(self, msg=None):
-        state = self.state['start'] + self.state['atten'] + self.state['fb'] +\
-        self.state['fee'] + self.state['checksum']
 
-        self._resp_buffer = state.bytes
-    
+    def _fee_read(self, args):
+        if args[0] >=0 and args[0] < 4:
+            state = self.state['FEE'][args[0]]
+            self._resp_buffer = self._build_resp(const.kACK,
+                                             state)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR, const.FEE_RANGE)
+
+   
+    def _fee_write(self, args):
+        if args is not None:
+            if args[0] >=0 and args[0] < 4:
+                self.state['FEE'][args[0]] = args[1]
+                self._resp_buffer = self._build_resp(const.kACK,
+                                        const.FEE_WRITTEN)
+            else:
+                self._resp_buffer = self._build_resp(const.kERR,
+                                        const.FEE_RANGE)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR,
+                                    const.DATA_PARSE_FAIL)
+
+
+    def _filter_read(self, args):
+        self._resp_buffer = self._build_resp(const.kACK, self.state['FILTER'])
+   
+    def _filter_write(self, args):
+        if args[0] >=0 and args[0] < 4:
+            self.state['FILTER'] = args[0]
+            self._resp_buffer = self._build_resp(const.kACK,
+                                                 const.FILTER_WRITTEN)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR, const.FILTER_RANGE)
+
+
+    def _atten_read(self, args):
+        if args is not None:
+            if args[0] >=0 and args[0] < 2:
+                self._resp_buffer = self._build_resp(const.kACK,
+                                         self.state['ATTEN'][args[0]])
+            else:
+                self._resp_buffer = self._build_resp(const.kERR,
+                                        const.DATA_PARSE_FAIL)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR,
+                                    const.DATA_PARSE_FAIL)
+   
+    def _atten_write(self, args):
+        if args is not None:
+            if args[0] >=0 and args[0] < 2:
+                self.state['ATTEN'][args[0]] = args[1]
+                self._resp_buffer = self._build_resp(const.kACK,
+                                        const.ATTEN_WRITTEN)
+            else:
+                self._resp_buffer = self._build_resp(const.kERR,
+                                        const.DATA_PARSE_FAIL)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR,
+                                    const.DATA_PARSE_FAIL)
+
+
+    def _eeprom_read(self, args):
+        self._resp_buffer = self._build_resp(const.kACK, self.state['EEPROM'])
+   
+    def _eeprom_write(self, args):
+        if args is not None:
+            if args[0] < 1024 and args[0] >=1:
+                self.state['EEPROM'] = args[0]
+                self._resp_buffer = self._build_resp(const.kACK,
+                                                     const.EEPROM_WRITTEN)
+            else:
+                self._resp_buffer = self._build_resp(const.kERR,
+                                        const.EEPROM_RANGE)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR,
+                                    const.DATA_PARSE_FAIL)
+
+    #def _unpack(self, inputstring):
+        #inputstring = inputstring.strip(const.END_COMMAND)
+        #parts = inputstring.split(const.SEPARATOR)
+
+        #command = parts[0]
+        #try:
+            #args = parts[1].split(const.ARG_SEPARATOR)
+            #for i in range(len(args)):
+                #try:
+                    #args[i] = int(args[i])
+                #except ValueError:
+                    #pass
+        #except IndexError:
+            #args = None
+
+        #return command, args
+        
+
     def read(self, numberOfBytes):
+        """
+        Emulates Serial interface. 
+
+        Takes the same arguments as :func:Serial.read but does not respect the
+        `numberOfBytes` argument. 
+
+        Returns the response generated by the last :func:write command.
+        """
         return self._resp_buffer
 
     def write(self, inputstring):
-        in_bitarray = BitArray(bytes=inputstring)
-        # Strips ending ';'
-        in_bitarray.replace(const.END_COMMAND,Bits())
+        """
+        Emulates Serial interface. 
 
-        #command, msg = list(BitArray(bytes=inputstring).split(const.SEPARATOR))
-        split = list(in_bitarray.split(const.SEPARATOR))
-        if len(split) == 1:
-            msg = None
-            command = split[0]
-        elif len(split) >= 2:
-            command = split[0]
-            msg = split[1]
-            # Strips ','
-            msg.replace(const.SEPARATOR,Bits())
-         
-        self.responses[command.uint](msg)
+        Takes the same arguments as :func:Serial.write.
+
+        Sets up a response generated by the issued command, which can be
+        retrieved via the :func:read command.
+        """
+        command, args = self._unpack(inputstring)
+        if int(command) < max(self.responses):
+            self.responses[int(command)](args)
  
