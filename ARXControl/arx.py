@@ -30,7 +30,15 @@ from .connection import Connection
 
 
 class ARX(object):
-    """ARX Control Object."""
+    """
+    ARX Control Object.
+
+    :attr:`power`, :attr:`attenN` ,and :attr:`filter` are all implemented via
+    Python properties. When their values are accessed, the underlying system
+    fetches the current values from the ACU. When they are assigned values, the
+    values are validated, then transmitted to the ACU, when also validates and
+    then applies the new setting.
+    """
 
     _unpack = unpack
 
@@ -94,6 +102,12 @@ class ARX(object):
 
     @property
     def power(self):
+        """
+        Interface to the ACU FEE Power system. When assigned a single boolean
+        value, it assigns that value to all FEE Channels. When assigned a
+        four-element list, it assigns the ith element of the list to the ith
+        channel. When accessed, it fetches the current state from the ACU.
+        """
         out = []
         for i in range(4):
             resp = self._send(const.FEE_READ,i)
@@ -135,6 +149,11 @@ class ARX(object):
 
     @property
     def filter(self):
+        """
+        Interface to the ACU Filter system. When assigned an int (0-2), it sets
+        the ACU to the selected filter. When accessed, it fetches the current
+        state from the ACU.
+        """
         resp = int(self._send(const.FILTER_READ)[0])
         return resp
             
@@ -150,6 +169,11 @@ class ARX(object):
 
     @property
     def atten0(self):
+        """
+        Interface to the ACU Attenuator system, attenuator 0. When assigned a
+        level (0-15), it sets the ACU to the selected level. When accessed, it
+        fetches the current state from the ACU.
+        """
         resp = int(self._send(const.ATTEN_READ,0)[0])
         return resp
 
@@ -165,6 +189,11 @@ class ARX(object):
 
     @property
     def atten1(self):
+        """
+        Interface to the ACU Attenuator system, attenuator 1. When assigned a
+        level (0-15), it sets the ACU to the selected level. When accessed, it
+        fetches the current state from the ACU.
+        """
         resp = int(self._send(const.ATTEN_READ,1)[0])
         return resp
 
