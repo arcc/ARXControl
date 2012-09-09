@@ -32,3 +32,13 @@ Simple API
 .. _USB Boarduino: http://www.adafruit.com/products/91
 .. _Adafruit: http://www.adafruit.com
 
+Further Documentation
+---------------------
+
+For more info, continue below.
+
+.. toctree::
+    :maxdepth: 1
+
+    api
+    pinout
