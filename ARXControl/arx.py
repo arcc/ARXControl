@@ -1,12 +1,38 @@
-from bitstring import BitArray, BitStream, Bits, ReadError as BS_ReadError
-
-from .connection import Connection
 from . import const
 from .err import CheckError, WriteError
+
+def unpack(self, inputstring):
+    """
+    Unpacks an ACU Command Structure into a tuple.
+
+    :param inputstring: ACU Command String (or Response String).
+
+    :rtype: A tuple of (CMD Code | RESP Code, ARGS | RESP String | None). 
+    """
+    inputstring = inputstring.strip(const.END_COMMAND)
+    parts = inputstring.split(const.SEPARATOR)
+
+    command = int(parts[0])
+    try:
+        args = parts[1].split(const.ARG_SEPARATOR)
+        for i in range(len(args)):
+            try:
+                args[i] = int(args[i])
+            except ValueError:
+                pass
+    except IndexError:
+        args = None
+
+    return command, args
+
+from .connection import Connection
+
 
 
 class ARX(object):
     """ARX Control Object."""
+
+    _unpack = unpack
 
     def __init__(self, tty):
         """
@@ -17,7 +43,7 @@ class ARX(object):
         self.conn = self._connect(tty)
         self.conn_failure = 0
         self.check_error = 0
-        self._setup()
+        #self._setup()
         self._initialize()
 
     def _setup(self):
@@ -25,12 +51,11 @@ class ARX(object):
         #: List of booleans. Represents FEE Power
         self.power = [False for i in range(4)]
         #: Atten 0, 0-15
-        self.atten0 = 0
+        self.atten0 = 15
         #: Atten 1, 0-15
-        self.atten1 = 0
+        self.atten1 = 15
         #: Filter, 0-2
         self.filter = 0
-
 
     def _initialize(self):
         """Initialization hook."""
@@ -41,114 +66,115 @@ class ARX(object):
         """Connection hook. Useful for testing."""
         return Connection(tty)
 
-    def _checksum(self, state):
+    def _send(self, *args):
         """
-        Calculate checksum of unpacked message.
+        Wraps :attr:`ARXControl.connection.Connection._make_cmd` with retrying
+        to ease use of communication system.
 
-        :param state: Dictionary of BitArray objects created by
-            :meth:`~ARXControl.ARX._unpack`
-        :rtype: Bits
-        """
-        return state['start'] ^ state['atten'] ^ (state['fb'] + state['fee'])
+        Takes same parameters as
+        :attr:`ARXControl.connection.Connection._make_cmd`
 
-    def _unpack(self, state_stream):
+        :rtype: String containing ACU Response Message.
         """
-        Unpacks serial stream from control unit.
-
-        :param state_stream: BitStream instance containing state frame.
-        :rtype: Dictionary of BitArrays.
-        """
-        state = {}
-        state['start'] = state_stream.read(8)
-        state['atten'] = state_stream.read(8)
-        state['fb'] = state_stream.read(4)
-        state['fee'] = state_stream.read(4)
-        try:
-            state['checksum'] = state_stream.read(8)
-        except BS_ReadError:
-            pass
-
-        return state
-
-    def _update(self):
-        """
-        Takes :attr:`~ARXControl.state` and updates :attr:`~ARXControl.channels`
-        """
-        fee = list(self.state['fee'].cut(1))
-        
-        for i in range(len(self.power)):
-            self.power[i] = fee[i]
-        self.filterbank = self.state['fb']
-        self.atten0, self.atten1 = map(lambda x: x.uint,
-                                       list(self.state['atten'].cut(4)))
-
-    def read(self):
-        """
-        Reads current ARX configuration. Updates internal dictionary
-        :attr:`~ARXControl.ARX.state`.
-        """
+        error_cnt = 0
         with self.conn as conn:
-            while self.check_error < const.MAX_RETRIES:
-                conn.write(self.conn._send_cmd(const.READ))
-                ack,resp = self.conn._split(conn.read(const.BUFFER_SIZE))
+            rsp=''
+            while error_cnt < const.MAX_RETRIES:
+                conn.write(conn._make_cmd(*args))
+                code, resp = self._unpack(conn.read(const.BUFFER_SIZE))
 
-                state_stream = BitStream(bytes=resp)
+                if code is not const.kACK:
+                    error_cnt += 1
+                    rsp = resp
+                else:
+                    return resp
+            cmd_str = conn._make_cmd(*args)
+            raise IOError("Could not execute `%s`. Recieved response `%s`"%(
+                            cmd_str,rsp))
 
-                state = self._unpack(state_stream)
+    @property
+    def power(self):
+        out = []
+        for i in range(4):
+            resp = self._send(const.FEE_READ,i)
+            out.append(int(resp[0]))
+        return out
 
-                try:
-                    if self._checksum(state) == state['checksum']:
-                        self.check_error = 0
-                        self.state = state
-                        self._update()
-                        return True
+    @power.setter
+    def power(self,pwr):
+        if hasattr(pwr,'__iter__'):
+            if len(pwr) == 4:
+                for i in range(4):
+                    try:
+                        pwr[i] = int(pwr[i])
+                    except ValueError:
+                        raise ValueError(
+                            "power can only accept 0/1 or boolean True/False")
+                    if pwr[i] == 1 or pwr[i] == 0:
+                        self._send(const.FEE_WRITE,i,pwr[i])
                     else:
-                        self.check_error += 1
-                except KeyError:
-                    raise CheckError(
-                            "Message from control unit cannot be verified.")
-
-            raise CheckError("Message from control unit cannot be verified.")
-
-    def _atten_translate(self, atten):
-        """
-        Converts an atten level to binary representation.
-
-        :rtype: Bits 4 bits long.
-        """
-        return Bits(uint=atten, length=4)
-
-    def _translate(self):
-        """
-        Converts internal states to message pack.
-
-        :rtype: BitArray of length :attr:`~ARXControl.const.FRAME_SIZE`.
-        """
-        attens = BitArray()
-
-        attens.append(self._atten_translate(self.atten0))
-        attens.append(self._atten_translate(self.atten1))
-        fb = Bits(uint=self.filter, length=4)
-        fee = Bits(self.power)
-
-        message = const.START_BYTE + attens + fb + fee
-        checksum = self._checksum(self._unpack(BitStream(message)))
-
-        return message + checksum
-
-    def write(self):
-        """
-        Writes internal states to ARXControl
-        """
-        with self.conn as conn:
-            #comm_frame = const.WRITE + const.SEPARATOR + self._translate()+\
-                    #const.END_COMMAND 
-            
-            conn.write(self.conn._send_cmd(const.WRITE,self._translate().bytes))
-
-            cmd,_ = self.conn._split(conn.read(const.BUFFER_SIZE))
-
-            if int(cmd) == const.kACK.uint: 
-                return True
+                        raise ValueError(
+                            "power can only accept 0/1 or boolean True/False")
             else:
-                raise WriteError("Did not recieve ACK on write attempt.") 
+                raise ValueError(
+                    "power must be either a single value or a four "
+                    "element iterable")
+        else:
+            try:
+                pwr = int(pwr)
+            except ValueError:
+                raise ValueError(
+                    "power must be either an int or a four element iterable")
+
+            if pwr == 1 or pwr == 0:
+                for i in range(4):
+                    self._send(const.FEE_WRITE,i,pwr)
+            else:
+                raise ValueError(
+                    "power can only accept 0/1 or boolean True/False")
+
+    @property
+    def filter(self):
+        resp = int(self._send(const.FILTER_READ)[0])
+        return resp
+            
+    @filter.setter
+    def filter(self,value):
+        if 0 <= value <= 2:
+            if value == int(value):
+                resp = self._send(const.FILTER_WRITE,value)
+            else:
+                raise ValueError("Filter does not accept float values")
+        else:
+            raise ValueError("Attempt to set filter out of range (0-2)")
+
+    @property
+    def atten0(self):
+        resp = int(self._send(const.ATTEN_READ,0)[0])
+        return resp
+
+    @atten0.setter
+    def atten0(self,level):
+        if 0 <= level <= 15:
+            if level == int(level):
+                resp = self._send(const.ATTEN_WRITE,0,level)
+            else:
+                raise ValueError("Atten0 does not accept float values")
+        else:
+            raise ValueError("Attempt to set atten0 out of range (0-15)")
+
+    @property
+    def atten1(self):
+        resp = int(self._send(const.ATTEN_READ,1)[0])
+        return resp
+
+    @atten1.setter
+    def atten1(self,level):
+        if 0 <= level <= 15:
+            if level == int(level):
+                resp = self._send(const.ATTEN_WRITE,1,level)
+            else:
+                raise ValueError("Atten1 does not accept float values")
+        else:
+            raise ValueError("Attempt to set atten1 out of range (0-15)")
+

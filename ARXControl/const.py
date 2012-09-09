@@ -22,6 +22,7 @@ FRAME_OFFSET = 15 # Bytes
 BUFFER_SIZE = 100 # Bytes
 
 SEPARATOR = ','
+ARG_SEPARATOR = '|'
 END_COMMAND = ';'
 
 #BAUDRATE = 57600 # Baudrate for Arduino Duemilanove (FTDI Comms)
@@ -31,3 +32,13 @@ TIMEOUT = 1 # Seconds
 
 # Responses
 READY_RSP = "READY"
+FEE_WRITTEN = "FEE State Written"
+FEE_RANGE = "FEE selection is out of range"
+FILTER_WRITTEN = "Filter State Written"
+FILTER_RANGE = "Filter selection is out of range"
+ATTEN_WRITTEN = "Atten State Written"
+ATTEN_RANGE = "Atten selection is out of range"
+EEPROM_WRITTEN = "EEPROM Address Updated"
+EEPROM_RANGE = "EEPROM Address is out of range"
+DATA_PARSE_FAIL = "Data string could not be parsed"
+
