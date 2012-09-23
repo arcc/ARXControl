@@ -88,7 +88,7 @@ class ARX(object):
         with self.conn as conn:
             rsp=''
             while error_cnt < const.MAX_RETRIES:
-                conn.write(conn._make_cmd(*args))
+                conn.write(self.conn._make_cmd(*args))
                 code, resp = self._unpack(conn.read(const.BUFFER_SIZE))
 
                 if code is not const.kACK:
@@ -96,7 +96,7 @@ class ARX(object):
                     rsp = resp
                 else:
                     return resp
-            cmd_str = conn._make_cmd(*args)
+            cmd_str = self.conn._make_cmd(*args)
             raise IOError("Could not execute `%s`. Recieved response `%s`"%(
                             cmd_str,rsp))
 
