@@ -207,3 +207,7 @@ class ARX(object):
         else:
             raise ValueError("Attempt to set atten1 out of range (0-15)")
 
+    def write_flash(self):
+        resp = self._send(const.FLASH_WRITE)
+
+
