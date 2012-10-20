@@ -24,6 +24,9 @@ These tests require `nose` to properly find all test cases.
 You can install `nose` via `pip install nose`, or `easy_intsall nose` if you
 haven't yet been introduced to the wonders of `pip`.
 
+If you have been introduced to `pip`, you can use `pip install -r
+test_requirements.txt`. 
+
 The tests can be run via `nosetests` after install.
 
 [Adafruit](http://www.adafruit.com)
