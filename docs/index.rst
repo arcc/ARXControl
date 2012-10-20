@@ -11,13 +11,6 @@ It is not intended for direct interaction with the ARX, but is meant to be a
 library used by a more complex LoFASM interface system.
 
 
-Pinout
-------
-
-Pinout as mapped to an ATMega328 (Arduino compatible for now).
-Prototyping is based off of a standard Arduino Uno, but plans are to move to a
-`USB Boarduino`_ by `Adafruit`_.
-
 .. include:: pinout.rst
 
 Simple API
