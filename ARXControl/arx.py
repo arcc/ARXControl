@@ -207,7 +207,28 @@ class ARX(object):
         else:
             raise ValueError("Attempt to set atten1 out of range (0-15)")
 
+    @property
+    def epprom_offset(self):
+        """
+        Interface to the ACU EPPROM storage system. It reports the position
+        offset for the storage system. When accessed, it fetches the current
+        state from the ACU.
+        """
+        resp = int(self._send(const.EEPROM_READ)[0])
+        return resp
+
+    @eeprom_offset.setter
+    def eeprom_offset(self,position):
+        if 0 <= position <= (const.EEPROM_SIZE/const.FLASH_SIZE):
+            if position == int(position):
+                resp = self._send(const.EEPROM_WRITE,position)
+            else:
+                raise ValueError("EEPROM_OFFSET does not accept float values")
+        else:
+            raise ValueError("Attempt to set EEPROM_OFFSET out of range (0-15)")
+
     def write_flash(self):
         resp = self._send(const.FLASH_WRITE)
 
+    
 
