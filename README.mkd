@@ -29,5 +29,5 @@ test_requirements.txt`.
 
 The tests can be run via `nosetests` after install.
 
-[Adafruit](http://www.adafruit.com)
-[Boarduino](http://www.adafruit.com/products/91)
+[Adafruit]: http://www.adafruit.com
+[Boarduino]: http://www.adafruit.com/products/91
