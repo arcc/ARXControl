@@ -208,7 +208,7 @@ class ARX(object):
             raise ValueError("Attempt to set atten1 out of range (0-15)")
 
     @property
-    def epprom_offset(self):
+    def eeprom_offset(self):
         """
         Interface to the ACU EPPROM storage system. It reports the position
         offset for the storage system. When accessed, it fetches the current
