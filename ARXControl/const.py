@@ -26,8 +26,8 @@ SEPARATOR = ','
 ARG_SEPARATOR = '|'
 END_COMMAND = ';'
 
-#BAUDRATE = 57600 # Baudrate for Arduino Duemilanove (FTDI Comms)
-BAUDRATE = 115200 # Baudrate for Arduino Uno + (AT8u2 Comms)
+BAUDRATE = 57600 # Baudrate for Arduino Duemilanove (FTDI Comms)
+#BAUDRATE = 115200 # Baudrate for Arduino Uno + (AT8u2 Comms)
 
 TIMEOUT = 1 # Seconds
 
