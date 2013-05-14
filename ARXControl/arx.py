@@ -42,13 +42,13 @@ class ARX(object):
 
     _unpack = unpack
 
-    def __init__(self, tty):
+    def __init__(self, tty, rate=None):
         """
         Creates a new instance of ARX.
 
         :param tty: `port` parameter for serial connection to ARX.
         """
-        self.conn = self._connect(tty)
+        self.conn = self._connect(tty,rate)
         self.conn_failure = 0
         self.check_error = 0
         #self._setup()
@@ -70,9 +70,9 @@ class ARX(object):
         #self.read()
         pass
 
-    def _connect(self, tty):
+    def _connect(self, tty, rate):
         """Connection hook. Useful for testing."""
-        return Connection(tty)
+        return Connection(tty,rate)
 
     def _send(self, *args):
         """

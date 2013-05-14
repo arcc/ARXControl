@@ -32,16 +32,19 @@ class Connection(object):
     """
     _unpack = unpack
 
-    def __init__(self, tty):
+    def __init__(self, tty, rate):
         """
         :param tty: `port` parameter for serial connection to ARX
         """
-        self.serial = self._connect(tty)
+        self.serial = self._connect(tty, rate)
         self.conn_failure = 0
 
-    def _connect(self, tty):
+    def _connect(self, tty, rate):
         """Connect hook. Useful for testing hooks"""
-        return Serial(tty, timeout=const.TIMEOUT, baudrate=const.BAUDRATE)
+        if not rate:
+            rate = const.BAUDRATE
+
+        return Serial(tty, timeout=const.TIMEOUT, baudrate=rate)
 
     def _split(self, resp):
         return resp.strip(';').split(',')
