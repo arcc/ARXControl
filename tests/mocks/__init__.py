@@ -12,8 +12,8 @@ class MockConnection(Connection):
     :class:`MockACU`.
     """
 
-    def _connect(self, tty):
-        return MockACU(tty)
+    def _connect(self, tty, rate):
+        return MockACU(tty, rate)
 
 
 class MockARX(ARX):
@@ -24,8 +24,8 @@ class MockARX(ARX):
     Also overwrites :meth:`_initialize` to remove opening :meth:`read`.
     """
 
-    def _connect(self, tty):
-        return MockConnection(tty)
+    def _connect(self, tty, rate):
+        return MockConnection(tty, rate)
 
     def _initialize(self):
         pass
@@ -47,7 +47,7 @@ class MockACU(ARX, Connection):
                      'EEPROM':1}
 
 
-    def __init__(self, tty=None):
+    def __init__(self, tty=None, rate=None):
         self.responses = {const.ACU_READY: self._ready,
                           const.FEE_READ: self._fee_read,
                           const.FEE_WRITE: self._fee_write,
