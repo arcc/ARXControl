@@ -227,8 +227,18 @@ class ARX(object):
         else:
             raise ValueError("Attempt to set EEPROM_OFFSET out of range (0-15)")
 
+    def roach(self, state):
+        if 0 <= state <= 1:
+            resp = self._send(const.ROACH_WRITE, state)
+            if resp[0] == const.ROACH_WRITTEN:
+                return state
+        else:
+            raise ValueError("Attempt to set ROACH to state out of range (0-1)")
+
+
     def write_flash(self):
         resp = self._send(const.FLASH_WRITE)
+        return True
 
     
 

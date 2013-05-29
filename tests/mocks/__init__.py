@@ -56,7 +56,10 @@ class MockACU(ARX, Connection):
                           const.ATTEN_READ: self._atten_read,
                           const.ATTEN_WRITE: self._atten_write,
                           const.EEPROM_READ: self._eeprom_read,
-                          const.EEPROM_WRITE: self._eeprom_write}
+                          const.EEPROM_WRITE: self._eeprom_write,
+                          const.FLASH_WRITE: self._flash_write,
+                          const.ROACH_WRITE: self._roach_write,
+                          }
 
         self._resp_buffer = ''
         self.state = self.DEFAULT_STATE
@@ -160,6 +163,24 @@ class MockACU(ARX, Connection):
             self._resp_buffer = self._build_resp(const.kERR,
                                     const.DATA_PARSE_FAIL)
 
+    def _flash_write(self, args):
+        self._resp_buffer = self._build_resp(const.kACK,
+                                             const.FLASH_WRITTEN)
+
+    def _roach_write(self, args):
+        if args is not None:
+            if 0 <= args[0] <= 1:
+                self._resp_buffer = self._build_resp(const.kACK,
+                                                     const.ROACH_WRITTEN)
+            else:
+                self._resp_buffer = self._build_resp(const.kACK,
+                                                     const.ROACH_RANGE)
+        else:
+            self._resp_buffer = self._build_resp(const.kERR,
+                                    const.DATA_PARSE_FAIL)
+
+
+
     #def _unpack(self, inputstring):
         #inputstring = inputstring.strip(const.END_COMMAND)
         #parts = inputstring.split(const.SEPARATOR)
@@ -199,6 +220,6 @@ class MockACU(ARX, Connection):
         retrieved via the :func:read command.
         """
         command, args = self._unpack(inputstring)
-        if int(command) < max(self.responses):
+        if int(command) <= max(self.responses):
             self.responses[int(command)](args)
  

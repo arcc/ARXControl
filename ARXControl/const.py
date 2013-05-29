@@ -15,6 +15,7 @@ ATTEN_WRITE = 10
 EEPROM_READ = 11
 EEPROM_WRITE = 12
 FLASH_WRITE = 13
+ROACH_WRITE = 14
 
 # Consts
 MAX_RETRIES = 3
@@ -42,6 +43,8 @@ ATTEN_RANGE = "Atten selection is out of range"
 EEPROM_WRITTEN = "EEPROM Address Updated"
 EEPROM_RANGE = "EEPROM Address is out of range"
 FLASH_WRITTEN = "EEPROM Written"
+ROACH_WRITTEN = "Roach Power State Written"
+ROACH_RANGE = "Roach Power State is not out of range"
 
 DATA_PARSE_FAIL = "Data string could not be parsed"
 

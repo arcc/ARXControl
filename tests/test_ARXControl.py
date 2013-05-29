@@ -140,3 +140,14 @@ class TestARXControl(unittest.TestCase):
             with self.assertRaises(ValueError, msg="Setting atten1 to %s"%x):
                 self.arx.atten1 = x 
 
+    def test_flash_write(self):
+        i = self.arx.write_flash()
+        self.assertEqual(1, i, "Writing Flash")
+
+    def test_roach_write(self):
+        i = self.arx.roach(1)
+        self.assertEqual(1, i, "Powering Roach")
+        i = self.arx.roach(0)
+        self.assertEqual(0, i, "Shutting Down Roach")
+
+
