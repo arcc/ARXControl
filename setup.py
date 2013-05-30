@@ -22,7 +22,7 @@ from setuptools import setup
 
 setup(
     name='ARXControl',
-    version='0.8.4',
+    version='0.2',
     url='http://github.com/arcc/ARXControl',
     #license='BSD',
     author='Anthony J. Ford',
